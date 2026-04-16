@@ -1,121 +1,107 @@
 package pages;
 
-import com.codeborne.selenide.SelenideElement;
+import io.qameta.allure.Allure;
+import org.junit.jupiter.api.Assertions;
 
-import static com.codeborne.selenide.Condition.text;
-import static com.codeborne.selenide.Selectors.byText;
-import static com.codeborne.selenide.Selenide.*;
+public class RegistrationPage extends CommonPage {
+    /*******************************************************************************************************************
+     *                                  Локаторы элементов на страницы
+     ******************************************************************************************************************/
+    // Поле [Ваше имя]
+    private static final String USER_FULL_NAME_ID = "fullName";
+    //--------------------------------------------------------------------------------------------------------------------------
+    // Поле [Электронная почта]
+    private static final String USER_EMAIL_ID = "email";
+    //--------------------------------------------------------------------------------------------------------------------------
+    // Поле [Номер телефона (необязательно)]
+    private static final String USER_TELEPHONE_NUMBER_ID = "telephoneNumber";
+    //--------------------------------------------------------------------------------------------------------------------------
+    // Поле [Пароль]
+    private static final String USER_PASSWORD_ID = "password";
+    //--------------------------------------------------------------------------------------------------------------------------
+    // Поле [Подтверждение пароля]
+    private static final String USER_CONFIRM_PASSWORD_ID = "confirmPassword";
+    //--------------------------------------------------------------------------------------------------------------------------
+    // IFRAME токена капчи
+    private static final String RECAPTCHA_IFRAME_XPATH = "//iframe[contains(@title, 'reCAPTCHA')]";
+    //--------------------------------------------------------------------------------------------------------------------------
+    // Чек-бокс токена капчи
+    private static final String RECAPTCHA_TOKEN_XPATH = "//div[@class='recaptcha-checkbox-border']";
+    //--------------------------------------------------------------------------------------------------------------------------
+    // Кнопка [Регистрация]
+    private static final String REGISTER_BUTTON_HEADER_XPATH = "//a[contains(text(), 'Регистрация')]";
+    //--------------------------------------------------------------------------------------------------------------------------
+    // Кнопка [Зарегистрироваться]
+    private static final String REGISTER_BUTTON_XPATH = "//button[contains(text(), 'Зарегистрироваться')]";
+    // Кнопка [Войдите в систему]
+    private static final String LOGIN_BUTTON_XPATH = "//a[contains(text(), 'Войдите в систему')]";
+    //--------------------------------------------------------------------------------------------------------------------------
 
-public class RegistrationPage {
 
-    private final String FORM_TITLE = "Student Registration Form";
-    private SelenideElement
-            formTitle = $(".practice-form-wrapper"),
-            firstNameInput = $("#firstName"),
-            lastNameInput = $("#lastName"),
-            userEmailInput = $("#userEmail"),
-            genderInput = $("label[for='gender-radio-1']"),
-            numberInput = $("#userNumber"),
-            calendarClick = $("#dateOfBirthInput"),
-            monthCheck = $(".react-datepicker__month-select"),
-            yearCheck = $(".react-datepicker__year-select"),
-            hobbyesChechBox = $("label[for='hobbies-checkbox-1']"),
-            subjectsInput = $("#subjectsInput"),
-            uploadFile = $("#uploadPicture"),
-            currentAdressInput = $("#currentAddress"),
-            state = $("#state"),
-            city = $("#city"),
-            stateInput = $("#stateCity-wrapper"),
-            bottom = $("[id=submit]");
+    // Сообщение об ошибке
+    private static final String ERROR_MESSAGE_XPATH = "//div[contains(@class, 'error')]";
+    //--------------------------------------------------------------------------------------------------------------------------
+    private static final String EMAIL_EXISTS_ERROR_XPATH = "//div[contains(text(), 'Пользователь с таким email уже существует')]";
+    /*******************************************************************************************************************
+     *                                        Методы страницы
+     ******************************************************************************************************************/
 
-    public RegistrationPage openPage(String value) {
-        open(value);
-        formTitle.shouldHave(text(FORM_TITLE));
-        return this;
-    }
 
-    public RegistrationPage typeFirstName(String value) {
-        firstNameInput.setValue(value);
-        return this;
-    }
+    /**
+     * Регистрация нового пользователя (данные из конфига)
+     */
+    public void register(String userType) {
+        String fullName;
+        String email;
+        String telephone;
+        String password;
 
-    public RegistrationPage typeLastName(String value) {
-        lastNameInput.setValue(value);
-        return this;
-    }
+        switch (userType) {
+            case "user":
+                fullName = config.getConfigParameter("USER_FULL_NAME");
+                email = config.getConfigParameter("USER_EMAIL");
+                telephone = config.getConfigParameter("USER_TELEPHONE_NUMBER");
+                password = config.getConfigParameter("USER_PASSWORD");
+                break;
+            case "userTwo":
+                fullName = config.getConfigParameter("USER_TWO_FULL_NAME");
+                email = config.getConfigParameter("USER_TWO_EMAIL");
+                telephone = config.getConfigParameter("USER_TWO_PHONE");
+                password = config.getConfigParameter("USER_TWO_PASSWORD");
+                break;
+            default:
+                throw new AssertionError("Неверный параметр - " + userType);
+        }
 
-    public RegistrationPage typeUserEmail(String value) {
-        userEmailInput.setValue(value);
-        return this;
-    }
+        clickOnElement(REGISTER_BUTTON_HEADER_XPATH);
+        waitForPageLoad();
+        logger.info("Регистрация пользователя: {}", email);
 
-    public RegistrationPage typeGender() {
-        genderInput.click();
-        return this;
-    }
+        setValueForIdElement(USER_FULL_NAME_ID, fullName);
+        setValueForIdElement(USER_EMAIL_ID, email);
+        setValueForIdElement(USER_TELEPHONE_NUMBER_ID, telephone);
+        setValueForIdElement(USER_PASSWORD_ID, password);
+        setValueForIdElement(USER_CONFIRM_PASSWORD_ID, password);
+        clickElementInsideIframe(RECAPTCHA_IFRAME_XPATH, RECAPTCHA_TOKEN_XPATH);
+        waitSomeSeconds(1);
+        clickOnElement(REGISTER_BUTTON_XPATH);
+        logger.info("Проверка редиректа на страницу логина");
+        waitSomeSeconds(1);
+        // СНАЧАЛА проверяем, не появилась ли ошибка
+        if (isElementExist(EMAIL_EXISTS_ERROR_XPATH)) {
 
-    public RegistrationPage typeNumber(String value) {
-        numberInput.setValue(value);
-        return this;
-    }
+            // Делаем скриншот СРАЗУ
+            takeScreenshot();
 
-    public RegistrationPage typeCalendar(String day, String month, String year) {
-        calendarClick.click();
-        monthCheck.selectOption(month);
-        yearCheck.selectOption(year);
-        $(".react-datepicker__day--0" + day +
-                ":not(.react-datepicker__day--outside-month)").click();
-        return this;
-    }
+            // Логируем ошибку
+            String errorText = getTextOfElement(EMAIL_EXISTS_ERROR_XPATH);
+            logger.error("Ошибка регистрации: {}", errorText);
+            Allure.addAttachment("Ошибка валидации", "text/plain", errorText);
 
-    public RegistrationPage typeHobbies() {
-        hobbyesChechBox.click();
-        return this;
-    }
-
-    public RegistrationPage typeSubjects(String value) {
-        subjectsInput.setValue(value).pressEnter();
-        return this;
-    }
-
-    public RegistrationPage typeFile(String file) {
-        uploadFile.uploadFromClasspath(file);
-        return this;
-    }
-
-    public RegistrationPage typeCurrentAress(String value) {
-        currentAdressInput.setValue(value);
-        return this;
-    }
-
-    public RegistrationPage typeStateCity(String value) {
-        state.scrollIntoView(true).click();
-        stateInput.$(byText(value)).click();
-        return this;
-    }
-
-    public RegistrationPage typeCity(String value) {
-        city.click();
-        stateInput.$(byText(value)).click();
-        return this;
-    }
-
-    public RegistrationPage clickBottom() {
-        bottom.click();
-        return this;
-    }
-
-    public RegistrationPage checkResultsValueStudentName(String key, String value) {
-        $x("//td[text()='" + key + "']").parent()
-                .shouldHave(text(value));
-        return this;
-    }
-
-    public RegistrationPage checkResultsValueOther(String key, String value) {
-        $x("//td[text()='" + key + "']")
-                .closest("tr")
-                .find("td:nth-child(2)")
-                .shouldHave(text(value));
-        return this;
+            // Проваливаем тест с сообщением
+            Assertions.fail("Регистрация не удалась: " + errorText);
+        }
+        waitForUrlContains("/login",1 );
+        logger.info("Регистрация нового пользователя прошла успешно");
     }
 }

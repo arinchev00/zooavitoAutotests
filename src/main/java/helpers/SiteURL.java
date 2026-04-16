@@ -6,7 +6,6 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public enum SiteURL {
-    SITE_URL_TUNNEL("https://zooavito.cloudpub.ru/"),
-    HOST_TUNNEL_API("http://localhost:8081/v1/api/");
+    SITE_URL_TUNNEL("https://zooavito.cloudpub.ru/");
     private final String url;
 }

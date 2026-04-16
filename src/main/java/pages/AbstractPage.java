@@ -4,18 +4,22 @@ import com.codeborne.selenide.SelenideElement;
 import static com.codeborne.selenide.Selenide.switchTo;
 import helpers.ConfigContainer;
 import helpers.WebDriverContainer;
+import io.qameta.allure.Allure;
 import org.apache.http.client.fluent.Request;
 import org.junit.jupiter.api.Assertions;
 import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.*;
 import org.openqa.selenium.support.ui.ExpectedCondition;
+import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.FluentWait;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.util.*;
@@ -346,8 +350,49 @@ public abstract class AbstractPage {
         return url();
     }
 
-    public String getDocumentGUIDFromSiteURL() {
-        return getSiteUrl().substring(getSiteUrl().lastIndexOf('/') + 1);
+    /**
+     * Ожидает, что URL будет содержать указанную строку
+     * @param expectedUrlPart ожидаемая часть URL (например, "/login")
+     * @param timeoutSeconds таймаут в секундах
+     */
+    public void waitForUrlContains(String expectedUrlPart, int timeoutSeconds) {
+        try {
+            logger.info("Ожидание URL, содержащего: {}", expectedUrlPart);
+            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(timeoutSeconds));
+            wait.until(ExpectedConditions.urlContains(expectedUrlPart));
+        } catch (TimeoutException e) {
+            // Делаем скриншот при падении
+            takeScreenshot();
+            logger.error("Ожидаемый URL '{}' не найден. Текущий URL: {}", expectedUrlPart, driver.getCurrentUrl());
+            throw e;
+        }
+    }
+
+
+    /**
+            * Делает скриншот и сохраняет его в отчет
+     */
+    public void takeScreenshot() {
+        try {
+            // Проверяем, что драйвер ещё жив
+            if (driver == null) {
+                logger.error("Driver is null, cannot take screenshot");
+                return;
+            }
+
+            // Проверяем, что страница загружена
+            if (!driver.getCurrentUrl().startsWith("http")) {
+                logger.error("No page loaded, cannot take screenshot");
+                return;
+            }
+
+            File screenshot = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
+            byte[] screenshotBytes = Files.readAllBytes(screenshot.toPath());
+            Allure.addAttachment("Screenshot", "image/png", new ByteArrayInputStream(screenshotBytes), "png");
+            logger.info("Скриншот добавлен в Allure отчёт");
+        } catch (IOException e) {
+            logger.error("Не удалось сделать скриншот: {}", e.getMessage());
+        }
     }
 
     /**

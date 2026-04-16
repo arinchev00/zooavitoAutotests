@@ -42,6 +42,9 @@ public class WebDriverContainer {
      * @return Статический экземпляр Selenium WebDriver
      */
     public WebDriver getWebDriver() {
+        if (driver == null) {
+            setDrivers();  // ← инициализируем, если null
+        }
         return driver;
     }
 
@@ -54,7 +57,8 @@ public class WebDriverContainer {
         LoggingPreferences logPrefs = new LoggingPreferences();
         logPrefs.enable(LogType.BROWSER, Level.SEVERE);
 
-        ChromeOptions options = new ChromeOptions();  //
+        ChromeOptions options = new ChromeOptions();
+        options.setBinary("/usr/bin/chromium"); //
         options.setCapability("goog:loggingPrefs", logPrefs);
 
         ChromeDriverService service = new ChromeDriverService.Builder()

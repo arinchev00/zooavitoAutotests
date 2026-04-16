@@ -1,15 +1,13 @@
 package pages;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.Map;
 
 public class LoginPage extends CommonPage {
 
-    private static final Logger logger = LoggerFactory.getLogger(LoginPage.class);
-
-    // Поле [Email]
+    /*******************************************************************************************************************
+     *                                  Локаторы элементов на страницы
+     ******************************************************************************************************************/
+    // Поле [Электронная почта]
     private static final String USER_EMAIL_ID = "email";
     //--------------------------------------------------------------------------------------------------------------------------
     // Поле [Пароль]
@@ -24,14 +22,13 @@ public class LoginPage extends CommonPage {
     // Кнопка [Вход]
     private static final String ENTER_BUTTON_HEADER_XPATH = "//a[contains(text(), 'Вход')]";
     //--------------------------------------------------------------------------------------------------------------------------
-    // Кнопка [Регистрация]
-    private static final String REGISTER_BUTTON_HEADER_XPATH = "//button[contains(text(), 'Регистрация')]";
-    //--------------------------------------------------------------------------------------------------------------------------
     // Кнопка [Войти]
     private static final String ENTER_BUTTON_XPATH = "//button[contains(text(), 'Войти')]";
     //--------------------------------------------------------------------------------------------------------------------------
-    // Кнопка [Регистрация]
-    private static final String REGISTER_BUTTON_XPATH = "//a[contains(text(), 'Зарегистрироваться')]";
+    /*******************************************************************************************************************
+     *                                        Методы страницы
+     ******************************************************************************************************************/
+
 
     /**
      * Устанавливает данные для входа в личный кабинет
@@ -58,5 +55,8 @@ public class LoginPage extends CommonPage {
         clickElementInsideIframe(RECAPTCHA_IFRAME_XPATH, RECAPTCHA_TOKEN_XPATH);
         waitForPageLoad();
         clickOnElement(ENTER_BUTTON_XPATH);
+        logger.info("Проверка редиректа на главную страницу");
+        waitForUrlContains("/home", 2);
+        logger.info("Авторизация пользователя прошла успешно");
     }
 }
