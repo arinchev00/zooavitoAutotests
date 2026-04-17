@@ -86,7 +86,7 @@ public class RegistrationPage extends CommonPage {
         waitSomeSeconds(1);
         clickOnElement(REGISTER_BUTTON_XPATH);
         logger.info("Проверка редиректа на страницу логина");
-        waitSomeSeconds(1);
+        waitSomeSeconds(2);
         // СНАЧАЛА проверяем, не появилась ли ошибка
         if (isElementExist(EMAIL_EXISTS_ERROR_XPATH)) {
 
